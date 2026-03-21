@@ -1,0 +1,12 @@
+flask
+transformers
+torch
+requests
+beautifulsoup4
+pillow
+numpy
+opencv-python
+pandas
+scikit-learn==1.8.0
+reportlab
+gunicorn

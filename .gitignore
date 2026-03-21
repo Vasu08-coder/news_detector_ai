@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+
+# Local runtime/data
+history.db
+static/uploads/
+uploads/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Large/local datasets (keep local, don't push)
+Dataset/
+dataset/
+News_Dataset/
+video dataset/
+news.csv
