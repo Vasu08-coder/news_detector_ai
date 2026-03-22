@@ -54,8 +54,8 @@ def verify_news(text):
     matched_keywords = [word for word in keywords if word in COMMON_NEWS_KEYWORDS]
 
     if not search_query:
-        score = 0.0
-        explanation = "No useful keywords were found, so the text could not be checked well."
+        score = 0.5
+        explanation = "No useful keywords were found, so verification stayed neutral."
     elif matched_keywords:
         score = 0.8 if search_success else 0.65
         explanation = (
@@ -63,9 +63,9 @@ def verify_news(text):
             "so it looks closer to a normal news report."
         )
     else:
-        score = 0.3 if search_success else 0.15
+        score = 0.45 if search_success else 0.4
         explanation = (
-            "No reliable news-style keywords were found, so the text is harder to trust."
+            "Strong news-specific keywords were limited, so the verification signal stayed cautious."
         )
 
     if search_query and search_success:

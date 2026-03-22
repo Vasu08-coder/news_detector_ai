@@ -57,6 +57,19 @@ def text_agent(text):
 
     raw_result = detect_text(text)
     label, probability, explanation = _normalize_text_detection(raw_result)
+    lowered_text = str(text).lower()
+    common_keywords = {
+        "government", "president", "minister", "election", "court", "police",
+        "report", "official", "statement", "international", "india", "world",
+        "economy", "health", "education", "technology", "market", "sports",
+        "policy", "agency", "cabinet", "parliament",
+    }
+    suspicious_keywords = {
+        "shocking", "viral", "rumor", "secret", "conspiracy", "aliens",
+        "miracle", "exposed", "banned", "hoax", "clickbait", "unbelievable",
+    }
+    common_count = sum(1 for word in common_keywords if word in lowered_text)
+    suspicious_count = sum(1 for word in suspicious_keywords if word in lowered_text)
 
     if label == "REAL":
         score = probability
@@ -73,7 +86,15 @@ def text_agent(text):
         verification_score = 0.5
         verification_explanation = "Verification support was not available."
 
-    final_score = (0.85 * score) + (0.15 * verification_score)
+    # Let the trained model lead, and let verification only nudge borderline cases.
+    verification_adjustment = (verification_score - 0.5) * 0.12
+    final_score = score + verification_adjustment
+
+    # If the wording looks like normal news and verification supports it,
+    # stop borderline FAKE bias from dominating the final text decision.
+    if label == "FAKE" and verification_score >= 0.65 and suspicious_count == 0 and common_count >= 1:
+        final_score = max(final_score, 0.58)
+
     final_score = max(0.0, min(round(final_score, 2), 1.0))
 
     if final_score > 0.5:
@@ -83,7 +104,7 @@ def text_agent(text):
     else:
         final_label = label
 
-    final_confidence = round(max(probability, verification_score) * 100, 2)
+    final_confidence = round(max(50.0, min(95.0, (0.85 * probability + 0.15 * verification_score) * 100)), 2)
     final_explanation = (
         f"The model predicted {final_label} with {final_confidence}% confidence. "
         f"{explanation} {verification_explanation}"
@@ -400,8 +421,17 @@ def meta_agent(text_result=None, image_result=None, video_result=None, url_resul
 
     if weighted_average > 0.5:
         final_result = "REAL"
-    else:
+    elif weighted_average < 0.5:
         final_result = "FAKE"
+    else:
+        majority_real = sum(1 for _, label, _ in active_labels if label == "REAL")
+        majority_fake = sum(1 for _, label, _ in active_labels if label == "FAKE")
+        if majority_real > majority_fake:
+            final_result = "REAL"
+        elif majority_fake > majority_real:
+            final_result = "FAKE"
+        else:
+            final_result = "REAL"
 
     final_confidence = confidence_sum if confidence_sum > 0 else (55 + abs(weighted_average - 0.5) * 50)
 

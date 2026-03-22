@@ -9,6 +9,14 @@ IMAGE_MODEL_PATH = os.path.join(os.path.dirname(__file__), "image_model.pkl")
 _image_model = None
 
 
+def _find_class_index(classes, target_label):
+    target_upper = str(target_label).upper()
+    for index, value in enumerate(classes):
+        if str(value).upper() == target_upper:
+            return index
+    return None
+
+
 def extract_image_features(image):
     width, height = image.size
     resolution = width * height
@@ -118,8 +126,15 @@ def detect_image(image_path):
             features = extract_image_features(image).reshape(1, -1)
             probabilities = image_model.predict_proba(features)[0]
             classes = list(image_model.classes_)
-            real_index = classes.index("REAL") if "REAL" in classes else 0
-            real_score = float(probabilities[real_index])
+            real_index = _find_class_index(classes, "REAL")
+            fake_index = _find_class_index(classes, "FAKE")
+
+            if real_index is not None:
+                real_score = float(probabilities[real_index])
+            elif fake_index is not None:
+                real_score = 1.0 - float(probabilities[fake_index])
+            else:
+                real_score = 0.5
 
             if real_score >= 0.5:
                 label = "REAL"
